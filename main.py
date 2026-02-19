@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta, timezone
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -8,8 +9,6 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
-from datetime import timedelta, timezone
-
 
 # ===== CONFIG =====
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -32,69 +31,57 @@ OWNER_ID = 5015499341  # <-- put your Telegram user ID here
 
 # ===== START =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📊 Daily Marketing Report\n\nဒီနေ့ဘယ်နှစ်ယောက်အပ်လဲ (နံပါတ်ပဲထည့်):")
+    await update.message.reply_text(
+        "📊 Daily Marketing Report\n\nဒီနေ့ဘယ်နှစ်ယောက်အပ်လဲ (နံပါတ်ပဲထည့်):"
+    )
     return TODAY_ADD
 
+# ===== CANCEL =====
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Operation cancelled.")
+    return ConversationHandler.END
+
 # ===== NUMERIC INPUT VALIDATION =====
-async def today_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def numeric_input(update: Update, context: ContextTypes.DEFAULT_TYPE, key: str, next_state: int, prompt: str):
     text = update.message.text.strip()
     try:
-        context.user_data["today_add"] = int(text)
+        context.user_data[key] = int(text) if key != "support_amount" else float(text)
     except ValueError:
-        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်လို့ပြောနေတယ် ဒါကျမမြင်ဘူး ပြန်ထည့်:")
-        return TODAY_ADD
-    await update.message.reply_text("ဒီနေ့ detail ဘယ်နှစ်ယောက်ပြောလဲ (နံပါတ်ပဲထည့်):")
-    return TODAY_DETAIL
+        await update.message.reply_text(f"⚠ နံပါတ်ပဲထည့်ပါ: {prompt}")
+        return next_state
+    await update.message.reply_text(prompt)
+    return next_state
+
+# ===== TODAY ADD HANDLER =====
+async def today_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    return await numeric_input(
+        update, context, "today_add", TODAY_DETAIL, "ဒီနေ့ detail ဘယ်နှစ်ယောက်ပြောလဲ (နံပါတ်ပဲထည့်):"
+    )
 
 async def today_detail(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    try:
-        context.user_data["today_detail"] = int(text)
-    except ValueError:
-        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်လို့ပြောနေတယ် ဒါကျမမြင်ဘူး ပြန်ထည့်:")
-        return TODAY_DETAIL
-    await update.message.reply_text("Detail ဘယ်နှစ်ယောက်ကျန်လဲ ဒီနေ့ (နံပါတ်ပဲထည့်):")
-    return DETAIL_REMAIN
+    return await numeric_input(
+        update, context, "today_detail", DETAIL_REMAIN, "Detail ဘယ်နှစ်ယောက်ကျန်လဲ ဒီနေ့ (နံပါတ်ပဲထည့်):"
+    )
 
 async def detail_remain(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    try:
-        context.user_data["detail_remain"] = int(text)
-    except ValueError:
-        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်လို့ပြောနေတယ် ဒါကျမမြင်ဘူး ပြန်ထည့်:")
-        return DETAIL_REMAIN
-    await update.message.reply_text("ဒီနေ့ return ဘယ်နှစ်ယောက်ပြန်လဲ (နံပါတ်ပဲထည့်):")
-    return TODAY_RETURN
+    return await numeric_input(
+        update, context, "detail_remain", TODAY_RETURN, "ဒီနေ့ return ဘယ်နှစ်ယောက်ပြန်လဲ (နံပါတ်ပဲထည့်):"
+    )
 
 async def today_return(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    try:
-        context.user_data["today_return"] = int(text)
-    except ValueError:
-        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်လို့ပြောနေတယ် ဒါကျမမြင်ဘူး ပြန်ထည့်:")
-        return TODAY_RETURN
-    await update.message.reply_text("Return ဘယ်နှစ်ယောက်ကျန်လဲ ဒီနေ့ (နံပါတ်ပဲထည့်):")
-    return RETURN_REMAIN
+    return await numeric_input(
+        update, context, "today_return", RETURN_REMAIN, "Return ဘယ်နှစ်ယောက်ကျန်လဲ ဒီနေ့ (နံပါတ်ပဲထည့်):"
+    )
 
 async def return_remain(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    try:
-        context.user_data["return_remain"] = int(text)
-    except ValueError:
-        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်လို့ပြောနေတယ် ဒါကျမမြင်ဘူး ပြန်ထည့်:")
-        return RETURN_REMAIN
-    await update.message.reply_text("ဒီနေ့ဘယ်နှစ်ယောက်ဖြတ်လဲ (နံပါတ်ပဲထည့်):")
-    return TODAY_CUT
+    return await numeric_input(
+        update, context, "return_remain", TODAY_CUT, "ဒီနေ့ဘယ်နှစ်ယောက်ဖြတ်လဲ (နံပါတ်ပဲထည့်):"
+    )
 
 async def today_cut(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    try:
-        context.user_data["today_cut"] = int(text)
-    except ValueError:
-        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်လို့ပြောနေတယ် ဒါကျမမြင်ဘူး ပြန်ထည့်:")
-        return TODAY_CUT
-    await update.message.reply_text("ဘယ်နှစ်ယောက်ဖြတ်ဖို့ကျန်သေးလဲ (နံပါတ်ပဲထည့်):")
-    return CUT_REMAIN
+    return await numeric_input(
+        update, context, "today_cut", CUT_REMAIN, "ဘယ်နှစ်ယောက်ဖြတ်ဖို့ကျန်သေးလဲ (နံပါတ်ပဲထည့်):"
+    )
 
 async def cut_remain(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
@@ -102,88 +89,74 @@ async def cut_remain(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cut_remaining = int(text)
         context.user_data["cut_remain"] = cut_remaining
     except ValueError:
-        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်လို့ပြောနေတယ် ဒါကျမမြင်ဘူး ပြန်ထည့်:")
+        await update.message.reply_text("⚠ နံပါတ်ပဲထည့်ပါ:")
         return CUT_REMAIN
 
     if cut_remaining > 0:
         await update.message.reply_text(
-            "⚠ ဖြတ်ဖို့ကျန်နေသေးတယ် ဘာလို့ကျန်နေသေးတာလဲ.\nဖြတ်ဖို့ကျန်နေသေးတဲ့အကြောင်းရင်း customer name နဲ့တခါတည်းရေး:"
+            "⚠ ဖြတ်ဖို့ကျန်နေသေးတယ် ဘာလို့ကျန်နေသေးတာလဲ.\n"
+            "Customer name နဲ့တခါတည်းရေးပါ:"
         )
         return CUT_REASON
     else:
         context.user_data["cut_reason"] = "N/A"
-        await update.message.reply_text("ဒီနေ့အကောင့်ပွင့်လား?ပွင့်ရင် Y မပွင့်ရင် N (Y/N):")
+        await update.message.reply_text("ဒီနေ့အကောင့်ပွင့်လား? (Y/N):")
         return ACC_OPEN
 
-# ===== CUT REASON (TEXT ONLY) =====
+# ===== CUT REASON =====
 async def cut_reason(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["cut_reason"] = update.message.text
-    await update.message.reply_text("ဒီနေ့အကောင့်ပွင့်လား?ပွင့်ရင် Y မပွင့်ရင် N (Y/N):")
+    await update.message.reply_text("ဒီနေ့အကောင့်ပွင့်လား? (Y/N):")
     return ACC_OPEN
 
-# ===== ACC OPEN LOGIC =====
+# ===== ACC OPEN =====
 async def acc_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["acc_open"] = update.message.text.strip().upper()
+    acc_value = update.message.text.strip().upper()
+    context.user_data["acc_open"] = acc_value
     user = update.message.from_user
     username = f"@{user.username}" if user.username else "No Username"
 
     # Myanmar Time (UTC+06:30)
     myanmar_timezone = timezone(timedelta(hours=6, minutes=30))
-    message_time_myanmar = update.message.date.astimezone(myanmar_timezone)
-    context.user_data["formatted_time"] = message_time_myanmar.strftime("%Y-%m-%d %H:%M:%S")
+    context.user_data["formatted_time"] = update.message.date.astimezone(myanmar_timezone).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Numeric values
-    detail_remaining = int(context.user_data["detail_remain"])
-    return_remaining = int(context.user_data["return_remain"])
-
-    # ===== WARNING MESSAGE =====
-    if detail_remaining > 0 or return_remaining > 0:
-        warning_message = (
-            "⚠ မနက်ဖြန်ခုကျန်နေတဲ့ကောင်တွေအကုန်ပြီးအောင်ပြောရမယ်\n"
-            f"Detail ကျန်တဲ့ကောင်အရေအတွက်: {detail_remaining}\n"
-            f"Return ကျန်တဲ့ကောင်အရေအတွက်: {return_remaining}"
+    # Warn if remaining details or returns exist
+    if int(context.user_data.get("detail_remain", 0)) > 0 or int(context.user_data.get("return_remain", 0)) > 0:
+        await update.message.reply_text(
+            f"⚠ ကျန်နေသေးတဲ့ကောင်များ:\n"
+            f"Detail: {context.user_data.get('detail_remain')}\n"
+            f"Return: {context.user_data.get('return_remain')}"
         )
-        await update.message.reply_text(warning_message)
 
-    acc_open_value = context.user_data["acc_open"]
-
-    if acc_open_value == "Y":
-        # GIF congratulate
+    if acc_value == "Y":
         gif_url = "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHdvemFveGtzZTUxcWRsZ2J2eXRpMnQ4bGc0Z2E4azc3bW9mZGtwcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/1JTy9isIm0u0OqePP1/giphy.gif"
-        await update.message.reply_animation(animation=gif_url, caption="🎉 အကောင့်ပွင့်သွားပီ ပိုက်ဆံဝင်ဖို့ပဲကျန်တော့တယ်")
-        # Ask support name next
-        await update.message.reply_text("ရှာပေးတဲ့ support နာမည်ပြောပြပါဦး:")
+        await update.message.reply_animation(animation=gif_url, caption="🎉 အကောင့်ပွင့်သွားပြီ!")
+        await update.message.reply_text("ရှာပေးတဲ့ support နာမည်ပြောပါ:")
         return SUPPORT_NAME
-    elif acc_open_value == "N":
+    else:
         gif_noacc = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExenY5MWl5djlidTl2b3U3aDQ1ZDVsYmdlbnJoMmYzN2h0eWNrM3o0bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tZJagIk8GhR1NLNl7w/giphy.gif"
-        # Myanmar text
-        await update.message.reply_animation(animation=gif_noacc, caption="ခုထိအကောင့်ကမပွင့်သေးဘူး ထည့်ပေးတဲ့ support တွေကိုအားနာဦး")
-        # Finish and send summary
+        await update.message.reply_animation(animation=gif_noacc, caption="အကောင့်မပွင့်သေးပါ")
         return await send_summary(update, context)
 
-# ===== SUPPORT NAME =====
+# ===== SUPPORT NAME & AMOUNT =====
 async def support_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["support_name"] = update.message.text
-    await update.message.reply_text("ဘယ်လောက်နဲ့ပွင့်တာတုန်း:")
+    await update.message.reply_text("ဘယ်လောက်နဲ့ပွင့်တာလဲ:")
     return SUPPORT_AMOUNT
 
-# ===== SUPPORT AMOUNT =====
 async def support_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     try:
-        context.user_data["support_amount"] = float(text)  # allow decimal
+        context.user_data["support_amount"] = float(text)
     except ValueError:
-        await update.message.reply_text("⚠ ဘယ်လောက်နဲ့ပွင့်တာလဲမေးနေတာကို amount ကိုမှန်အောင်ထည့်လေ:")
+        await update.message.reply_text("⚠ Amount ကိုမှန်ထည့်ပါ:")
         return SUPPORT_AMOUNT
     return await send_summary(update, context)
 
-# ===== SEND SUMMARY FUNCTION =====
+# ===== SEND SUMMARY =====
 async def send_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     username = f"@{user.username}" if user.username else "No Username"
-
-    detail_remaining = int(context.user_data["detail_remain"])
-    return_remaining = int(context.user_data["return_remain"])
 
     summary = f"""
 📊 Daily Marketing Report
@@ -192,24 +165,23 @@ async def send_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
 👤 Username: {username}
 📅 Date & Time (UTC+06:30): {context.user_data['formatted_time']}
 
-Today Add: {context.user_data['today_add']}
-Today Detail: {context.user_data['today_detail']}
-Detail Remaining: {detail_remaining}
-Today Return: {context.user_data['today_return']}
-Return Remaining: {return_remaining}
-Today Cut: {context.user_data['today_cut']}
-Cut Remaining: {context.user_data['cut_remain']}
-Cut Reason: {context.user_data['cut_reason']}
-Acc Open: {context.user_data['acc_open']}
+Today Add: {context.user_data.get('today_add')}
+Today Detail: {context.user_data.get('today_detail')}
+Detail Remaining: {context.user_data.get('detail_remain')}
+Today Return: {context.user_data.get('today_return')}
+Return Remaining: {context.user_data.get('return_remain')}
+Today Cut: {context.user_data.get('today_cut')}
+Cut Remaining: {context.user_data.get('cut_remain')}
+Cut Reason: {context.user_data.get('cut_reason')}
+Acc Open: {context.user_data.get('acc_open')}
 """
 
-    # Add support info if Acc Open = Y
-    if context.user_data["acc_open"] == "Y":
-        summary += f"Support Name: {context.user_data['support_name']}\n"
-        summary += f"Open Amount: {context.user_data['support_amount']}\n"
+    if context.user_data.get("acc_open") == "Y":
+        summary += f"Support Name: {context.user_data.get('support_name')}\n"
+        summary += f"Open Amount: {context.user_data.get('support_amount')}\n"
 
     await context.bot.send_message(chat_id=OWNER_ID, text=summary)
-    await update.message.reply_text("✅ ဒီနေ့တစ်ရက်တော့ကုန်သွားပြန်ပီပေါ့ မင်းကံကောင်းပါဇီ!")
+    await update.message.reply_text("✅ ဒီနေ့တစ်ရက်ကုန်သွားပြီ!")
 
     return ConversationHandler.END
 
@@ -232,13 +204,13 @@ def main():
             SUPPORT_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, support_name)],
             SUPPORT_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, support_amount)],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler("cancel", cancel)],
     )
 
     app.add_handler(conv_handler)
+
     print("Bot is running...")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
