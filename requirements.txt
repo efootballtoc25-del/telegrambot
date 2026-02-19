@@ -1,1 +1,8 @@
-python-telegram-bot==20.7
+# Telegram Bot
+python-telegram-bot==20.5
+
+# Optional: for date/time handling
+python-dateutil>=2.8.2
+
+# Optional: environment variable support
+python-dotenv>=1.0.0
