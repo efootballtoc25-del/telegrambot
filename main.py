@@ -12,7 +12,6 @@ from datetime import timedelta, timezone
 
 
 # ===== CONFIG =====
-#BOT_TOKEN = "8412305691:AAGZTvfoUa-97Xr4jiWlVZGFz0b_cCYLVUs"
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 OWNER_ID = 5015499341  # <-- put your Telegram user ID here
 
